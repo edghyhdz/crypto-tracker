@@ -8,6 +8,7 @@ enum class API { BINANCE, KUCOIN };
 
 class ApiManager {
    public:
+    ApiManager();
     void get_token_price_data(API api);
     void save_data();
 
