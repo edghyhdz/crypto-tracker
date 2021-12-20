@@ -1,20 +1,22 @@
 #ifndef MANAGER_H
 #define MANAGER_H
 
+#include <mongocxx/instance.hpp>
 #include "binance_api.h"
 #include "mongo_db.h"
 
-enum class API { BINANCE, KUCOIN };
+enum class Exchange { BINANCE, KUCOIN };
 
 class ApiManager {
    public:
-    ApiManager();
-    void get_token_price_data(API api);
+    ApiManager(std::string uri, std::string db_name);
+    void get_token_price_data(Exchange ex);
     void save_data();
 
    private:
-    MongoDB _db_handler;
-    BinanceAPI _binance_handler;
+    mongocxx::instance _instance;
+    MongoDB *_db_handler;
+    BinanceAPI *_binance_handler;
 };
 
 #endif
