@@ -46,6 +46,7 @@ bool MongoDB::add_record(std::string coll_name, Data data) {
         for (auto &&cd : data.dictionary) {
             init_doc << cd.first << cd.second;
         }
+
         auto close_doc = init_doc << bsoncxx::builder::stream::close_document;
 
         bsoncxx::document::value doc = close_doc
