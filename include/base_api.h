@@ -15,7 +15,7 @@ class BaseAPIExchange {
     virtual ~BaseAPIExchange(){};
 
     // Do get request and get Token/coin price data
-    virtual std::string get_data() = 0;
+    virtual std::map<std::string, double> get_data() = 0;
     // Process get response
     virtual std::map<std::string, double> process_token_price_response(Response &response) = 0;
 
