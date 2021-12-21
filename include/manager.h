@@ -10,6 +10,7 @@ enum class Exchange { BINANCE, KUCOIN };
 class DataManager {
    public:
     DataManager(std::string uri, std::string db_name);
+    ~DataManager();
     void get_token_price_data(Exchange ex);
     void save_data();
 
