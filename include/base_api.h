@@ -10,6 +10,8 @@
 
 class BaseAPIExchange {
    public:
+    virtual ~BaseAPIExchange(){};
+
     // Do get request and get Token/coin price data
     virtual std::string get_data() = 0;
     // Process get response
