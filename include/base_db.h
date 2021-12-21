@@ -13,6 +13,7 @@ struct Data;
 
 class BaseDB {
    public:
+    virtual ~BaseDB(){};
     virtual bool add_record(std::string table, Data data) = 0;
     virtual bool update_record() = 0;
     virtual bool delete_record(std::string id) = 0;
