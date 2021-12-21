@@ -1,6 +1,7 @@
 #ifndef MONGO_DB
 #define MONGO_DB
 
+#include <iostream>
 #include <map>
 #include <set>
 #include "base_db.h"
@@ -27,6 +28,7 @@ struct Data {
 class MongoDB : public BaseDB {
    public:
     MongoDB(std::string uri, std::string db_name);
+    ~MongoDB() override { std::cout << "Called MongoDB destructor\n"; };
     bool add_record(std::string collection, Data data) override;
     bool update_record() override;
     bool delete_record(std::string id) override;
