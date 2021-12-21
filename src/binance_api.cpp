@@ -10,7 +10,10 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) {
     return size * nmemb;
 }
 
-BinanceAPI::BinanceAPI(int id) { this->set_id(id); }
+yact::BinanceAPI::BinanceAPI(int id) {
+    this->set_id(id); 
+    this->_mtx = new std::mutex();
+}
 
 /**
  * Process get request response into json format
@@ -18,7 +21,7 @@ BinanceAPI::BinanceAPI(int id) { this->set_id(id); }
  * @params[in] response
  *  Get request response
  */
-std::map<std::string, double> BinanceAPI::process_token_price_response(
+std::map<std::string, double> yact::BinanceAPI::process_token_price_response(
     Response &res) {
     // Change keys to symbol name
 
@@ -46,7 +49,7 @@ std::map<std::string, double> BinanceAPI::process_token_price_response(
  * @params[in] response
  *  get-request's response to parse
  */
-void BinanceAPI::parse_response(std::string &response) {
+void yact::BinanceAPI::parse_response(std::string &response) {
     std::istringstream resp(response);
     std::string header, complete_header, response_body;
     std::size_t index;
@@ -61,8 +64,9 @@ void BinanceAPI::parse_response(std::string &response) {
         if (index != std::string::npos) {
             if (boost::algorithm::trim_copy(header.substr(0, index)) ==
                 "x-mbx-used-weight-1m") {
-                this->_current_weight =
-                    stoi(boost::algorithm::trim_copy(header.substr(index + 1)));
+                this->set_current_weight(                    
+                    stoi(boost::algorithm::trim_copy(header.substr(index + 1))));
+ //               this->_current_weight =
                 // this->_requestWeight->setCurrentWeight(_currentWeight);
             }
         }
@@ -79,7 +83,7 @@ void BinanceAPI::parse_response(std::string &response) {
     response = "{\"response\": " + response + "}";
 }
 
-std::map<std::string, double> BinanceAPI::get_data() {
+std::map<std::string, double> yact::BinanceAPI::get_data() {
     long http_code;
     std::string read_buffer;
     // request API data
@@ -110,7 +114,7 @@ std::map<std::string, double> BinanceAPI::get_data() {
  *  Response text
  * @return none
  */
-void BinanceAPI::_get_request(long *http_code, std::string *read_buffer) {
+void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer) {
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, BINANCE_ENDPOINT);
@@ -124,3 +128,21 @@ void BinanceAPI::_get_request(long *http_code, std::string *read_buffer) {
     curl_global_cleanup();
 }
 
+/**
+ * Set Binance API current response weight. 
+ *
+ * @params[in] c_weight
+ *  current weight to set to `_current_weight`
+ */
+void yact::BinanceAPI::set_current_weight(int c_weight){
+    std::lock_guard<std::mutex>(*this->_mtx);
+    this->_current_weight = c_weight;
+}
+
+/**
+ * Get Binance API's current response weight
+ */
+int yact::BinanceAPI::get_current_weight(){
+    std::lock_guard<std::mutex>(*this->_mtx);
+    return this->_current_weight;
+}
