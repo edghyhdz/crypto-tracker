@@ -5,6 +5,8 @@
 #include "binance_api.h"
 #include "mongo_db.h"
 
+namespace yact {
+
 enum class Exchange { BINANCE, KUCOIN };
 
 class DataManager {
@@ -19,5 +21,5 @@ class DataManager {
     MongoDB *_db_handler;
     BinanceAPI *_binance_handler;
 };
-
+}  // namespace yact
 #endif
