@@ -25,6 +25,8 @@ struct Data {
     std::map<std::string, double> dictionary;
 };
 
+namespace yact {
+
 class MongoDB : public BaseDB {
    public:
     MongoDB(std::string uri, std::string db_name);
@@ -38,5 +40,5 @@ class MongoDB : public BaseDB {
     mongocxx::client _client;
     mongocxx::database _db;
 };
-
+}  // namespace yact
 #endif

@@ -1,19 +1,19 @@
 #include "mongo_db.h"
 #include <iostream>
 
-MongoDB::MongoDB(std::string uri, std::string db_name)
+yact::MongoDB::MongoDB(std::string uri, std::string db_name)
     : _uri(mongocxx::uri(uri)),
       _client(mongocxx::client(_uri)),
       _db(_client[db_name]) {
     std::cout << "Constructor MongoDB" << std::endl;
 }
 
-bool MongoDB::update_record() {
+bool yact::MongoDB::update_record() {
     std::cout << "Updating record " << std::endl;
     return true;
 }
 
-bool MongoDB::delete_record(std::string id) {
+bool yact::MongoDB::delete_record(std::string id) {
     std::cout << "Deleted record id: " << id << std::endl;
     return true;
 }
@@ -29,7 +29,7 @@ bool MongoDB::delete_record(std::string id) {
  * currencies and prices to be added
  * @return true if transaction was performed successfully, else false
  */
-bool MongoDB::add_record(std::string coll_name, Data data) {
+bool yact::MongoDB::add_record(std::string coll_name, Data data) {
     // Get current time stamp from system
     auto system_clock = std::chrono::system_clock::now();
     long time_stamp = std::chrono::duration_cast<std::chrono::milliseconds>(
