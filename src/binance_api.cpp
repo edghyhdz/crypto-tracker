@@ -18,16 +18,17 @@ BinanceAPI::BinanceAPI(int id) { this->set_id(id); }
  * @params[in] response
  *  Get request response
  */
-std::map<std::string, double> BinanceAPI::process_token_price_response(Response &res) {
+std::map<std::string, double> BinanceAPI::process_token_price_response(
+    Response &res) {
     // Change keys to symbol name
-    
+
     std::map<std::string, double> processed_response;
     for (auto item : res.response) {
         processed_response.insert(
             std::make_pair(item.at("symbol"), std::stod(item.at("price"))));
     }
 
-    return processed_response;       
+    return processed_response;
 }
 
 /**
@@ -78,21 +79,26 @@ void BinanceAPI::parse_response(std::string &response) {
     response = "{\"response\": " + response + "}";
 }
 
-std::string BinanceAPI::get_data() {
+std::map<std::string, double> BinanceAPI::get_data() {
     long http_code;
     std::string read_buffer;
     // request API data
     this->_get_request(&http_code, &read_buffer);
-    
+
     // Parse response into json-spotify readable format
     this->parse_response(read_buffer);
 
+    // Parse it as a Response struct
+    Response res = spotify::json::decode<Response>(read_buffer);
+
+    // It will later saved on the db at the DataManager class level
     std::cout << "CURRENT USED WEIGHT: " << this->_current_weight << std::endl;
 
     std::cout << "This is the request code: " << std::to_string(http_code)
               << std::endl;
-
-    return read_buffer;
+    // Return a key/value pair map where key is the token symbol and the value
+    // is the token price
+    return this->process_token_price_response(res);
 }
 
 /**
