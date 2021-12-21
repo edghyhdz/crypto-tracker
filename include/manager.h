@@ -7,9 +7,9 @@
 
 enum class Exchange { BINANCE, KUCOIN };
 
-class ApiManager {
+class DataManager {
    public:
-    ApiManager(std::string uri, std::string db_name);
+    DataManager(std::string uri, std::string db_name);
     void get_token_price_data(Exchange ex);
     void save_data();
 

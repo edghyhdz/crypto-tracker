@@ -5,7 +5,7 @@
 /*
  * Class constructor
  */
-ApiManager::ApiManager(std::string uri, std::string db_name) {
+DataManager::DataManager(std::string uri, std::string db_name) {
     this->_db_handler = new MongoDB(uri, db_name);
     this->_binance_handler = new BinanceAPI(1);
     std::cout << "Api manager constructor\n";
@@ -18,7 +18,7 @@ ApiManager::ApiManager(std::string uri, std::string db_name) {
  *  wnge to get currency info from
  * @return void
  */
-void ApiManager::get_token_price_data(Exchange ex) {
+void DataManager::get_token_price_data(Exchange ex) {
     std::cout << "Started getting Exchange data" << std::endl;
     while (true) {
         if (ex == Exchange::BINANCE) {
