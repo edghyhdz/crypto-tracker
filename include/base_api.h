@@ -6,7 +6,9 @@
 #define API_EXCHANGE_BASE
 
 #include <map>
-#include <string>
+
+// Forward struct declaration
+struct Response;
 
 class BaseAPIExchange {
    public:
@@ -15,7 +17,7 @@ class BaseAPIExchange {
     // Do get request and get Token/coin price data
     virtual std::string get_data() = 0;
     // Process get response
-    virtual std::string process_response(std::string &response) = 0;
+    virtual std::map<std::string, double> process_token_price_response(Response &response) = 0;
 
     // Normal behavior methods
     virtual int get_id() { return _id; }
