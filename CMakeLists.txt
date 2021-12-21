@@ -16,9 +16,14 @@ file(GLOB PROJECT_SRCS
 
 include_directories(include)
 include_directories(src)
+add_subdirectory(vendor/spotify-json)
 
 add_executable(crypto_warning ${PROJECT_SRCS})
+
 target_link_libraries(crypto_warning 
+    spotify-json
+    -lboost_system 
+    -lboost_filesystem
     PkgConfig::SERVED_PKG 
     Threads::Threads 
     ${CURL_LIBRARIES}
