@@ -1,5 +1,7 @@
 #include "binance_api.h"
 #include <curl/curl.h>
+#include <boost/algorithm/string.hpp>
+#include <sstream>
 
 // Callback to curl function
 // Reference https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
@@ -7,20 +9,90 @@ size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) {
     ((std::string *)userp)->append((char *)contents, size * nmemb);
     return size * nmemb;
 }
+
 BinanceAPI::BinanceAPI(int id) { this->set_id(id); }
 
-std::string BinanceAPI::process_response(std::string &response) {
-    return response + " extra text";
+/**
+ * Process get request response into json format
+ *
+ * @params[in] response
+ *  Get request response
+ */
+std::map<std::string, double> BinanceAPI::process_token_price_response(Response &res) {
+    // Change keys to symbol name
+    
+    std::map<std::string, double> processed_response;
+    for (auto item : res.response) {
+        processed_response.insert(
+            std::make_pair(item.at("symbol"), std::stod(item.at("price"))));
+    }
+
+    return processed_response;       
 }
 
-std::string BinanceAPI::get_data() { 
+/**
+ * Parses resonse into a format that can be used as an input by spotify-json
+ * decoder. Retrieves used weight from Binance API response in the following
+ * form
+ *
+ * x-mbx-used-weight -> current transaction used weight
+ * x-mbx-used-weight-1m -> cummulative used weight in 1 minute interval
+ *
+ * Separates response headers from response body
+ * Response body has the following form
+ * [{"symbol":"BTCUSD","price":"0.00003289"}, ..., {"symbol": "x", "price":"y"}]
+ *
+ * @params[in] response
+ *  get-request's response to parse
+ */
+void BinanceAPI::parse_response(std::string &response) {
+    std::istringstream resp(response);
+    std::string header, complete_header, response_body;
+    std::size_t index;
+
+    // Max request per minute in case request does not include that information
+    this->_current_weight = 1200;
+
+    // Find used weight on the response headers
+    while (std::getline(resp, header) && header != "\r") {
+        complete_header += header + "\n";
+        index = header.find(':', 0);
+        if (index != std::string::npos) {
+            if (boost::algorithm::trim_copy(header.substr(0, index)) ==
+                "x-mbx-used-weight-1m") {
+                this->_current_weight =
+                    stoi(boost::algorithm::trim_copy(header.substr(index + 1)));
+                // this->_requestWeight->setCurrentWeight(_currentWeight);
+            }
+        }
+    }
+
+    // Get response headers out of the readBuffer string response
+    size_t p = -1;
+    std::string temp_word = complete_header + " \n";
+    while ((p = response.find(complete_header)) != std::string::npos) {
+        response.replace(p, temp_word.length(), "");
+    }
+
+    // Add `response` key
+    response = "{\"response\": " + response + "}";
+}
+
+std::string BinanceAPI::get_data() {
     long http_code;
     std::string read_buffer;
-    this->_get_request(&http_code, &read_buffer);    
-
-    std::cout << "This is the exit code: " << std::to_string(http_code) << std::endl;
+    // request API data
+    this->_get_request(&http_code, &read_buffer);
     
-    return read_buffer; 
+    // Parse response into json-spotify readable format
+    this->parse_response(read_buffer);
+
+    std::cout << "CURRENT USED WEIGHT: " << this->_current_weight << std::endl;
+
+    std::cout << "This is the request code: " << std::to_string(http_code)
+              << std::endl;
+
+    return read_buffer;
 }
 
 /**
