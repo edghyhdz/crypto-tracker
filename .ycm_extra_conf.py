@@ -73,6 +73,7 @@ flags = [
 '-I', './include/',
 '-I', '/usr/local/include/bsoncxx/v_noabi',
 '-I', "/usr/local/include/mongocxx/v_noabi",
+"-I", "./vendor/spotify-json/include",
 '-isystem',
 get_python_inc(),
 '-isystem',
