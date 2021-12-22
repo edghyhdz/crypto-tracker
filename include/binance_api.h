@@ -35,8 +35,7 @@ struct default_codec_t<Response> {
 
 namespace yact {
 
-constexpr char BINANCE_ENDPOINT[] =
-    "https://api.binance.com/api/v3/ticker/price";
+constexpr char BINANCE_ENDPOINT[] = "https://api.binance.com/api/v3/ticker/price";
 constexpr int REQUEST_RATE = 500;   // Request new data (in miliseconds)
 constexpr int WEIGHT_LIMIT = 1000;  // Binance limit per minute
 
