@@ -66,8 +66,6 @@ void yact::BinanceAPI::parse_response(std::string &response) {
                 "x-mbx-used-weight-1m") {
                 this->set_current_weight(                    
                     stoi(boost::algorithm::trim_copy(header.substr(index + 1))));
- //               this->_current_weight =
-                // this->_requestWeight->setCurrentWeight(_currentWeight);
             }
         }
     }
