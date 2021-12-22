@@ -1,6 +1,9 @@
 #include "mongo_db.h"
 #include <iostream>
 
+/**
+ * MongoDB class constructor
+ */
 yact::MongoDB::MongoDB(std::string uri, std::string db_name)
     : _uri(mongocxx::uri(uri)),
       _client(mongocxx::client(_uri)),
@@ -8,13 +11,33 @@ yact::MongoDB::MongoDB(std::string uri, std::string db_name)
     std::cout << "Constructor MongoDB" << std::endl;
 }
 
+/**
+ * Udates record
+ */
 bool yact::MongoDB::update_record() {
     std::cout << "Updating record " << std::endl;
     return true;
 }
 
-bool yact::MongoDB::delete_record(std::string id) {
-    std::cout << "Deleted record id: " << id << std::endl;
+/**
+ * Deletes all records with `timeStamp` value below given `data.time_stamp`
+ *
+ * @params[in] coll_name
+ *  collection name
+ * @params[in] data
+ *  Data struct containing time_stamp attribute
+ */
+bool yact::MongoDB::delete_record(std::string coll_name, Data data) {
+    // Find ids
+    mongocxx::collection collection = this->_db[coll_name];
+
+    bsoncxx::stdx::optional<mongocxx::result::delete_result> result =
+        collection.delete_many(
+            bsoncxx::builder::stream::document{}
+            << "timeStamp" << bsoncxx::builder::stream::open_document << "$lte"
+            << data.time_stamp << bsoncxx::builder::stream::close_document
+            << bsoncxx::builder::stream::finalize);
+
     return true;
 }
 

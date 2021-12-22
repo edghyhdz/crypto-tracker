@@ -23,6 +23,7 @@ constexpr char kUsersPortfolio[] = "userPortfolio";
 // Data struct to pass to add_record method
 struct Data {
     std::map<std::string, double> dictionary;
+    long time_stamp;
 };
 
 namespace yact {
@@ -33,7 +34,7 @@ class MongoDB : public BaseDB {
     ~MongoDB() override { std::cout << "Called MongoDB destructor\n"; };
     bool add_record(std::string collection, Data data) override;
     bool update_record() override;
-    bool delete_record(std::string id) override;
+    bool delete_record(std::string collection, Data data) override;
 
    private:
     mongocxx::uri _uri;
