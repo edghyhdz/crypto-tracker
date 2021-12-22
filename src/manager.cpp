@@ -36,33 +36,42 @@ void yact::DataManager::get_token_price_data(Exchange ex) {
     std::cout << "Started getting Exchange data" << std::endl;
 
     Data data;
-
+    std::string coll_name{""};
     while (true) {
-        if (ex == Exchange::BINANCE) {
-            // Do not perform get request in case request is about to exceed
-            // binance's api rate limit
-            if (this->_binance_handler->get_current_weight() >= yact::WEIGHT_LIMIT)
+        // Get data from corresponding exchange
+        switch (ex) {
+            case Exchange::BINANCE:
+                std::cout << "Case BINANCE\n";
+                coll_name = "testBinance";
+                data.dictionary = this->_binance_handler->get_data();
+                break;
+            case Exchange::KUCOIN:
+                std::cout << "Case Kucoin\n";
+                coll_name = "testKucoin";
+                // TODO: Kucoin API
+                break;
+            default:
+                std::cout << "Default case\n";
                 continue;
-
-            std::cout << "Save binance data" << std::endl;
-
-            data.dictionary = this->_binance_handler->get_data();
-            std::cout << "Data: " << data.dictionary.size() << std::endl;
-
-            // Save data into db
-            this->_db_handler->add_record("testCrypto", data);
-
-            // Parse it into json format
-            // Response res = spotify::json::decode<Response>(read_buffer);
-
-            // std::cout << "ALl tokens: " << res.response.size() << std::endl;
-
-            //  std::cout << "Read buffer:\n" << read_buffer << std::endl;
-
-        } else {
-            std::cout << "Saving kucoin data\n";
         }
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        // Save data into db
+        this->_db_handler->add_record(coll_name, data);
+
+        // Delete records that have exceeded MAX_TIME_DB
+        // we are only interested in records from the past MAX_TIME_DB
+        // seconds
+        auto system_clock = std::chrono::system_clock::now();
+        data.time_stamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              system_clock.time_since_epoch())
+                              .count();
+
+        // Delete all records from one hour in the past
+        data.time_stamp = data.time_stamp - 3600000;
+        this->_db_handler->delete_record(coll_name, data);
+
+        // Sleep until next REQUEST_RATE miliseconds have pased by
+        std::this_thread::sleep_for(std::chrono::milliseconds(yact::REQUEST_RATE));
     }
 }
 
