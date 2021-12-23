@@ -3,15 +3,11 @@
 #include <boost/algorithm/string.hpp>
 #include <sstream>
 
-// Callback to curl function
-// Reference https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
-size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) {
-    ((std::string *)userp)->append((char *)contents, size * nmemb);
-    return size * nmemb;
-}
-
+/**
+ * Class constructor
+ */
 yact::BinanceAPI::BinanceAPI(int id) {
-    this->set_id(id); 
+    this->set_id(id);
     this->_mtx = new std::mutex();
 }
 
@@ -22,8 +18,10 @@ yact::BinanceAPI::BinanceAPI(int id) {
  *  Get request response
  */
 std::map<std::string, double> yact::BinanceAPI::process_token_price_response(
-    Response &res) {
+    std::string &read_buffer) {
     // Change keys to symbol name
+
+    Response res = spotify::json::decode<Response>(read_buffer);
 
     std::map<std::string, double> processed_response;
     for (auto item : res.response) {
@@ -64,8 +62,8 @@ void yact::BinanceAPI::parse_response(std::string &response) {
         if (index != std::string::npos) {
             if (boost::algorithm::trim_copy(header.substr(0, index)) ==
                 "x-mbx-used-weight-1m") {
-                this->set_current_weight(                    
-                    stoi(boost::algorithm::trim_copy(header.substr(index + 1))));
+                this->set_current_weight(stoi(
+                    boost::algorithm::trim_copy(header.substr(index + 1))));
             }
         }
     }
@@ -85,22 +83,20 @@ std::map<std::string, double> yact::BinanceAPI::get_data() {
     long http_code;
     std::string read_buffer;
     // request API data
-    this->_get_request(&http_code, &read_buffer);
+    this->_get_request(&http_code, &read_buffer, BINANCE_ENDPOINT);
 
     // Parse response into json-spotify readable format
     this->parse_response(read_buffer);
 
-    // Parse it as a Response struct
-    Response res = spotify::json::decode<Response>(read_buffer);
-
-    // It will later saved on the db at the DataManager class level
     std::cout << "CURRENT USED WEIGHT: " << this->_current_weight << std::endl;
 
     std::cout << "This is the request code: " << std::to_string(http_code)
               << std::endl;
-    // Return a key/value pair map where key is the token symbol and the value
-    // is the token price
-    return this->process_token_price_response(res);
+
+    // Return a key/value pair map where the key is the token symbol and the
+    // value is the token price. It will later saved on the db at the
+    // DataManager class level
+    return this->process_token_price_response(read_buffer);
 }
 
 /**
@@ -112,10 +108,10 @@ std::map<std::string, double> yact::BinanceAPI::get_data() {
  *  Response text
  * @return none
  */
-void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer) {
+void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer, std::string end_point) {
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *curl = curl_easy_init();
-    curl_easy_setopt(curl, CURLOPT_URL, BINANCE_ENDPOINT);
+    curl_easy_setopt(curl, CURLOPT_URL, end_point.c_str());
     // Used to write response header data back - debug purposes
     curl_easy_setopt(curl, CURLOPT_HEADER, 1);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -127,12 +123,12 @@ void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer) {
 }
 
 /**
- * Set Binance API current response weight. 
+ * Set Binance API current response weight.
  *
  * @params[in] c_weight
  *  current weight to set to `_current_weight`
  */
-void yact::BinanceAPI::set_current_weight(int c_weight){
+void yact::BinanceAPI::set_current_weight(int c_weight) {
     std::lock_guard<std::mutex>(*this->_mtx);
     this->_current_weight = c_weight;
 }
@@ -140,7 +136,7 @@ void yact::BinanceAPI::set_current_weight(int c_weight){
 /**
  * Get Binance API's current response weight
  */
-int yact::BinanceAPI::get_current_weight(){
+int yact::BinanceAPI::get_current_weight() {
     std::lock_guard<std::mutex>(*this->_mtx);
     return this->_current_weight;
 }
