@@ -45,13 +45,13 @@ class BinanceAPI : public BaseAPIExchange {
     ~BinanceAPI() override { std::cout << "Called BinanceAPI destructor\n"; };
     std::map<std::string, double> get_data() override;
     std::map<std::string, double> process_token_price_response(
-        Response &response) override;
+        std::string &response) override;
     void parse_response(std::string &response);
     void set_current_weight(int c_weight);
     int get_current_weight();
+    void _get_request(long *http_code, std::string *read_buffer, std::string end_point) override;
 
    private:
-    void _get_request(long *http_code, std::string *read_buffer);
     int _current_weight;
     std::mutex *_mtx;
 };

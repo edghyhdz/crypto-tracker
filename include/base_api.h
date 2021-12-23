@@ -7,9 +7,6 @@
 
 #include <map>
 
-// Forward struct declaration
-// struct Response;
-
 // Callback to curl function
 // Reference https://curl.se/libcurl/c/CURLOPT_WRITEFUNCTION.html
 inline size_t WriteCallback(char *contents, size_t size, size_t nmemb, void *userp) {
