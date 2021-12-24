@@ -4,19 +4,17 @@
 #include <curl/curl.h>
 #include <boost/algorithm/string.hpp>
 #include <sstream>
+#include "log.h"
 
 /**
  * Class constructor
  */
-yact::KucoinAPI::KucoinAPI(int id) {
-    this->set_id(id);
-    this->_mtx = new std::mutex();
-}
+yact::KucoinAPI::KucoinAPI() { this->_api_name = "kucoin"; }
 
 /*
  * Class destructor
  */
-yact::KucoinAPI::~KucoinAPI() { delete this->_mtx; }
+yact::KucoinAPI::~KucoinAPI() {}
 
 /**
  * Process get request response into json format
@@ -50,23 +48,19 @@ std::map<std::string, double> yact::KucoinAPI::get_data() {
     // Request token price data
     this->_get_request(&http_code, &read_buffer,
                        yact::KuCoin::KUCOIN_TICKER_ENDPOINT);
-    
-    this->set_current_request_code(http_code);
-    std::cout << "Current request code Kucoin: "
-              << this->get_current_request_code() << std::endl;
-    
+
+    this->set_http_code(http_code);
+    LOG(level::Info) << "Current request code KuCoin: " << this->get_http_code()
+                     << std::endl;
+
     return this->process_token_price_response(read_buffer);
 }
 
-void yact::KucoinAPI::set_current_request_code(int r_code) {
-    std::lock_guard<std::mutex>(*this->_mtx);
-    this->_current_request_code = r_code;
-}
-
-int yact::KucoinAPI::get_current_request_code() {
-    std::lock_guard<std::mutex>(*this->_mtx);
-    return this->_current_request_code;
-}
+/**
+ * Check whether request limit has been exceeded.
+ * @returns true if request has been exceeded.
+ */
+bool yact::KucoinAPI::has_reached_request_limit() { return false; }
 
 /**
  * Get request to unique KuCoin endpoint

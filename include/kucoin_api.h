@@ -23,6 +23,7 @@ constexpr int REQUEST_RATE = 1000;  // Request new data (in milliseconds)
 
 struct Ticker {
     std::string symbol;
+    std::string symbol_name;
     std::string buy; 
     std::string sell;
     std::string change_rate;
@@ -50,23 +51,19 @@ struct Response {
 };
 
 }  // namespace KuCoin
-class KucoinAPI : BaseAPIExchange {
+class KucoinAPI : public BaseAPIExchange {
    public:
-    KucoinAPI(int id);
+    KucoinAPI();
     ~KucoinAPI() override;
     std::map<std::string, double> get_data() override;
     std::map<std::string, double> process_token_price_response(
         std::string &response) override;
+    bool has_reached_request_limit() override;
 
     // Typical behavioral methods
-    void set_current_request_code(int r_code);
-    int get_current_request_code();
-
     void _get_request(long *http_code, std::string *read_buffer, std::string end_point) override;
-   
+
    private:
-    int _current_request_code;
-    std::mutex *_mtx;
 };
 }  // namespace yact
 
@@ -99,21 +96,22 @@ template <>
 struct default_codec_t<yact::KuCoin::Ticker> {
     static codec::object_t<yact::KuCoin::Ticker> codec() {
         auto codec = codec::object<yact::KuCoin::Ticker>();
-        codec.required("symbolName", &yact::KuCoin::Ticker::symbol);
-        codec.required("buy", &yact::KuCoin::Ticker::buy);
-        codec.required("sell", &yact::KuCoin::Ticker::sell);
-        codec.required("changeRate", &yact::KuCoin::Ticker::change_rate);
-        codec.required("changePrice", &yact::KuCoin::Ticker::change_price);
-        codec.required("high", &yact::KuCoin::Ticker::high);
-        codec.required("low", &yact::KuCoin::Ticker::low);
-        codec.required("vol", &yact::KuCoin::Ticker::vol);
-        codec.required("volValue", &yact::KuCoin::Ticker::vol_value);
-        codec.required("last", &yact::KuCoin::Ticker::last);
-        codec.required("averagePrice", &yact::KuCoin::Ticker::average_price);
-        codec.required("takerFeeRate", &yact::KuCoin::Ticker::taker_fee_rate);
-        codec.required("makerFeeRate", &yact::KuCoin::Ticker::maker_fee_rate);
-        codec.required("takerCoefficient", &yact::KuCoin::Ticker::taker_coefficient);
-        codec.required("makerCoefficient", &yact::KuCoin::Ticker::maker_coefficient);
+        codec.required("symbol", &yact::KuCoin::Ticker::symbol);
+        codec.required("symbolName", &yact::KuCoin::Ticker::symbol_name);
+        codec.optional("buy", &yact::KuCoin::Ticker::buy);
+        codec.optional("sell", &yact::KuCoin::Ticker::sell);
+        codec.optional("changeRate", &yact::KuCoin::Ticker::change_rate);
+        codec.optional("changePrice", &yact::KuCoin::Ticker::change_price);
+        codec.optional("high", &yact::KuCoin::Ticker::high);
+        codec.optional("low", &yact::KuCoin::Ticker::low);
+        codec.optional("vol", &yact::KuCoin::Ticker::vol);
+        codec.optional("volValue", &yact::KuCoin::Ticker::vol_value);
+        codec.optional("last", &yact::KuCoin::Ticker::last);
+        // codec.optional("averagePrice", &yact::KuCoin::Ticker::average_price);
+        codec.optional("takerFeeRate", &yact::KuCoin::Ticker::taker_fee_rate);
+        codec.optional("makerFeeRate", &yact::KuCoin::Ticker::maker_fee_rate);
+        codec.optional("takerCoefficient", &yact::KuCoin::Ticker::taker_coefficient);
+        codec.optional("makerCoefficient", &yact::KuCoin::Ticker::maker_coefficient);
         return codec;
     }
 };
