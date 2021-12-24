@@ -1,4 +1,5 @@
 #include "manager.h"
+#include "log.h"
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -53,11 +54,15 @@ void yact::DataManager::run_all_exchange_apis() {
 void yact::DataManager::get_token_price_data(BaseAPIExchange* api) {
     Data data;
     while (true) {
-        // Check if API has not exceeded any limit
-        if (api->has_reached_request_limit()) continue;
-
-        std::cout << "Saving data for: " << api->get_api_name() << std::endl;
+        LOG_MESSAGE(level::Info, "Saving data for: " + api->get_api_name());
         data.dictionary = api->get_data();
+        
+        // If returned data is empty, do not save data
+        if (data.dictionary.size() == 0) {
+            LOG_MESSAGE(level::Error, "API error");
+            continue;
+        }
+
         this->_db_h->add_record(api->get_api_name(), data);
 
         // Delete records that have exceeded MAX_TIME_DB
