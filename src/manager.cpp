@@ -1,15 +1,15 @@
 #include "manager.h"
-#include "log.h"
 #include <iostream>
 #include <memory>
 #include <thread>
+#include "log.h"
 
 /**
  * Class constructor
  */
 yact::DataManager::DataManager(std::string uri, std::string db_name) {
     this->_db_h = std::make_shared<MongoDB>(uri, db_name);
-    
+
     // ALL EXCHANGE APIs GO HERE
     this->_apis.push_back(new yact::BinanceAPI());
     this->_apis.push_back(new yact::KucoinAPI());
@@ -54,9 +54,10 @@ void yact::DataManager::run_all_exchange_apis() {
 void yact::DataManager::get_token_price_data(BaseAPIExchange* api) {
     Data data;
     while (true) {
-        LOG_MESSAGE(level::Info, "Saving data for: " + api->get_api_name());
+        LOG(level::Info) << "Saving data for: " << api->get_api_name()
+                         << std::endl;
         data.dictionary = api->get_data();
-        
+
         // If returned data is empty, do not save data
         if (data.dictionary.size() == 0) {
             LOG_MESSAGE(level::Error, "API error");
