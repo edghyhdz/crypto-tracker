@@ -36,24 +36,25 @@ struct default_codec_t<Response> {
 namespace yact {
 
 constexpr char BINANCE_ENDPOINT[] = "https://api.binance.com/api/v3/ticker/price";
-constexpr int REQUEST_RATE = 500;   // Request new data (in miliseconds)
+constexpr int REQUEST_RATE = 2000;   // Request new data (in miliseconds)
 constexpr int WEIGHT_LIMIT = 1000;  // Binance limit per minute
 
 class BinanceAPI : public BaseAPIExchange {
    public:
-    BinanceAPI(int id);
-    ~BinanceAPI() override { std::cout << "Called BinanceAPI destructor\n"; };
+    BinanceAPI();
+    ~BinanceAPI() override;
     std::map<std::string, double> get_data() override;
     std::map<std::string, double> process_token_price_response(
         std::string &response) override;
+    bool has_reached_request_limit() override;
+
     void parse_response(std::string &response);
     void set_current_weight(int c_weight);
     int get_current_weight();
     void _get_request(long *http_code, std::string *read_buffer, std::string end_point) override;
 
    private:
-    int _current_weight;
-    std::mutex *_mtx;
+    int _current_weight{0};
 };
 }  // namespace yact
 #endif
