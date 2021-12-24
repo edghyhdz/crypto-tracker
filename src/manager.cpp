@@ -1,18 +1,17 @@
 #include "manager.h"
 #include <iostream>
+#include <memory>
 #include <thread>
 
 /**
  * Class constructor
  */
 yact::DataManager::DataManager(std::string uri, std::string db_name) {
-    this->_db_handler = new yact::MongoDB(uri, db_name);
-    this->_binance_handler = new yact::BinanceAPI(1);
-    this->_kucoin_handler = new yact::KucoinAPI(1);
-
-    // Assign a lower api request weight to perform the first binance api's
-    // requests
-    this->_binance_handler->set_current_weight(0);
+    this->_db_h = std::make_shared<MongoDB>(uri, db_name);
+    
+    // ALL EXCHANGE APIs GO HERE
+    this->_apis.push_back(new yact::BinanceAPI());
+    this->_apis.push_back(new yact::KucoinAPI());
 
     std::cout << "DataManager constructor\n";
 }
@@ -21,50 +20,45 @@ yact::DataManager::DataManager(std::string uri, std::string db_name) {
  * DataManager class destructor
  */
 yact::DataManager::~DataManager() {
-    delete this->_db_handler;
-    delete this->_binance_handler;
-    delete this->_kucoin_handler;
+    // Join all API threads
+    this->_threads.front().join();
+    std::for_each(this->_threads.begin(), this->_threads.end(),
+                  [](std::thread& t) { t.join(); });
+
+    // All api objects were instantiated as pointers
+    for (auto api : this->_apis) {
+        delete api;
+    }
+
     std::cout << "DataManager Destructor\n";
+}
+
+/**
+ * Launch all available Exchange APIs
+ */
+void yact::DataManager::run_all_exchange_apis() {
+    for (auto api : this->_apis) {
+        this->_threads.emplace_back(&yact::DataManager::get_token_price_data,
+                                    this, api);
+    }
 }
 
 /**
  * Requests token price data from given Exchange (Binance, Kucoin, etc ...)
  *
- * @param[in] ex
- *  Exchange to get currency info from (i.e., Kucoin, Binance, etc)
+ * @param[in] api
+ *  Exchange api to get currency info from (i.e., Kucoin, Binance, etc)
  * @return void
  */
-void yact::DataManager::get_token_price_data(Exchange ex) {
-    std::cout << "Started getting Exchange data" << std::endl;
-
-    // this->_kucoin_handler->get_data();
-
+void yact::DataManager::get_token_price_data(BaseAPIExchange* api) {
     Data data;
-    std::string coll_name{""};
     while (true) {
-        // Check if the request limit has been surpased depending on the used
-        // Exchange
-        if (this->check_request_limit(ex)) continue;
+        // Check if API has not exceeded any limit
+        if (api->has_reached_request_limit()) continue;
 
-        // Get data from corresponding exchange
-        switch (ex) {
-            case Exchange::BINANCE:
-                std::cout << "Case BINANCE\n";
-                coll_name = "testBinance";
-                data.dictionary = this->_binance_handler->get_data();
-                break;
-            case Exchange::KUCOIN:
-                std::cout << "Case Kucoin\n";
-                coll_name = "testKucoin";
-                data.dictionary = this->_kucoin_handler->get_data();
-                break;
-            default:
-                std::cout << "Default case\n";
-                continue;
-        }
-
-        // Save data into db
-        this->_db_handler->add_record(coll_name, data);
+        std::cout << "Saving data for: " << api->get_api_name() << std::endl;
+        data.dictionary = api->get_data();
+        this->_db_h->add_record(api->get_api_name(), data);
 
         // Delete records that have exceeded MAX_TIME_DB
         // we are only interested in records from the past MAX_TIME_DB
@@ -76,35 +70,13 @@ void yact::DataManager::get_token_price_data(Exchange ex) {
 
         // Delete all records from one hour in the past
         data.time_stamp = data.time_stamp - 3600000;
-        this->_db_handler->delete_record(coll_name, data);
 
-        // Sleep until next REQUEST_RATE miliseconds have pased by
+        this->_db_h->delete_record(api->get_api_name(), data);
+
         std::this_thread::sleep_for(
             std::chrono::milliseconds(yact::REQUEST_RATE));
     }
+
+    return;
 }
 
-/**
- * Checks for request limits depending on the used Exchange API. Depending on
- * the Exchange used, API limits may be defined differently.
- *
- * @params[in] exchange
- *  Current in-use Exchange API
- */
-bool yact::DataManager::check_request_limit(Exchange exchange) {
-    switch (exchange) {
-        case Exchange::BINANCE:
-            if (this->_binance_handler->get_current_weight() >=
-                yact::WEIGHT_LIMIT)
-                return true;
-            break;
-        case Exchange::KUCOIN:
-            if (this->_kucoin_handler->get_current_request_code() ==
-                yact::KuCoin::REQUEST_LIMIT_CODE)
-                return true;
-            break;
-        default:
-            return true;
-    }
-    return false;
-}
