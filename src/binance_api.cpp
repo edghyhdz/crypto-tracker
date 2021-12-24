@@ -2,14 +2,20 @@
 #include <curl/curl.h>
 #include <boost/algorithm/string.hpp>
 #include <sstream>
+#include "log.h"
 
 /**
  * Class constructor
  */
-yact::BinanceAPI::BinanceAPI(int id) {
-    this->set_id(id);
-    this->_mtx = new std::mutex();
+yact::BinanceAPI::BinanceAPI() {
+    this->_api_name = "binance";
+    LOG_MESSAGE(level::Info, "Binance constructor");
 }
+
+/**
+ * Class destructor
+ */
+yact::BinanceAPI::~BinanceAPI() {}
 
 /**
  * Process get request response into json format
@@ -53,7 +59,7 @@ void yact::BinanceAPI::parse_response(std::string &response) {
     std::size_t index;
 
     // Max request per minute in case request does not include that information
-    this->_current_weight = 1200;
+    this->set_current_weight(yact::WEIGHT_LIMIT);
 
     // Find used weight on the response headers
     while (std::getline(resp, header) && header != "\r") {
@@ -79,24 +85,73 @@ void yact::BinanceAPI::parse_response(std::string &response) {
     response = "{\"response\": " + response + "}";
 }
 
+/*
+ * Get symbol price data of all tokens on Exchange
+ */
 std::map<std::string, double> yact::BinanceAPI::get_data() {
     long http_code;
     std::string read_buffer;
+
     // request API data
     this->_get_request(&http_code, &read_buffer, BINANCE_ENDPOINT);
+
+    this->set_http_code(http_code);
+    
+    // Check if request limit has not been exceeded
+    if (this->has_reached_request_limit()) {
+        LOG_MESSAGE(level::Error, "Request code: " + std::to_string(http_code) +
+                                      ". Response:" + read_buffer);
+        return std::map<std::string, double>();
+    }
 
     // Parse response into json-spotify readable format
     this->parse_response(read_buffer);
 
-    std::cout << "CURRENT USED WEIGHT: " << this->_current_weight << std::endl;
-
-    std::cout << "This is the request code: " << std::to_string(http_code)
-              << std::endl;
+    LOG(level::Info) << "CURRENT USED WEIGHT: " << this->_current_weight << std::endl;
 
     // Return a key/value pair map where the key is the token symbol and the
     // value is the token price. It will later saved on the db at the
     // DataManager class level
     return this->process_token_price_response(read_buffer);
+}
+
+/**
+ * Checks if requests to the API have exceeded its limit
+ *
+ * @returns true if limit has been exceeded
+ */
+bool yact::BinanceAPI::has_reached_request_limit() {
+    // If http_limit_counter has been exceeded 3 times in a row
+    // API has to be checked manually
+    if (this->get_http_limit_counter() == 3) return true;
+
+    // Check if weight limit is about to be exceeded, if so sleep thread for a
+    // minute
+    if (this->get_current_weight() >= yact::WEIGHT_LIMIT) {
+        LOG_MESSAGE(level::Warning, "Request weight about to be exceeded");
+        std::this_thread::sleep_for(std::chrono::minutes(1));
+        return false;
+    }
+
+    // Check first if http code is 200 else sleep for 5 min
+    if (this->get_http_code() == 200) {
+        this->reset_http_limit_counter();
+        return false;
+    }
+
+    // We have a different 200 code
+    this->increase_http_limit_counter();
+    
+    // Should log only once
+    if (this->get_http_limit_counter() == 3){
+        LOG_MESSAGE(level::Error, "Error counter exceeded, needs manual check");
+    }
+
+    LOG_MESSAGE(level::Info, "Waiting 6 minutes to enable API back");
+    // Sleep for 6 minutes to stop doing request to API
+    std::this_thread::sleep_for(std::chrono::minutes(6));
+
+    return true;
 }
 
 /**
@@ -108,7 +163,8 @@ std::map<std::string, double> yact::BinanceAPI::get_data() {
  *  Response text
  * @return none
  */
-void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer, std::string end_point) {
+void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer,
+                                    std::string end_point) {
     curl_global_init(CURL_GLOBAL_ALL);
     CURL *curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, end_point.c_str());
@@ -129,14 +185,10 @@ void yact::BinanceAPI::_get_request(long *http_code, std::string *read_buffer, s
  *  current weight to set to `_current_weight`
  */
 void yact::BinanceAPI::set_current_weight(int c_weight) {
-    std::lock_guard<std::mutex>(*this->_mtx);
     this->_current_weight = c_weight;
 }
 
 /**
  * Get Binance API's current response weight
  */
-int yact::BinanceAPI::get_current_weight() {
-    std::lock_guard<std::mutex>(*this->_mtx);
-    return this->_current_weight;
-}
+int yact::BinanceAPI::get_current_weight() { return this->_current_weight; }
