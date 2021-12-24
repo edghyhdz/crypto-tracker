@@ -53,6 +53,12 @@ std::map<std::string, double> yact::KucoinAPI::get_data() {
     LOG(level::Info) << "Current request code KuCoin: " << this->get_http_code()
                      << std::endl;
 
+    if (this->has_reached_request_limit()) {
+        LOG_MESSAGE(level::Error, "Request code: " + std::to_string(http_code) +
+                                      ". Response: " + read_buffer);
+        return std::map<std::string, double>();
+    }
+
     return this->process_token_price_response(read_buffer);
 }
 
@@ -60,7 +66,32 @@ std::map<std::string, double> yact::KucoinAPI::get_data() {
  * Check whether request limit has been exceeded.
  * @returns true if request has been exceeded.
  */
-bool yact::KucoinAPI::has_reached_request_limit() { return false; }
+bool yact::KucoinAPI::has_reached_request_limit() { 
+    
+    // If http_limit_counter has been exceeded 3 times in a row
+    // API has to be checked manually
+    if (this->get_http_limit_counter() == 3) return true;
+
+    // Check first if http code is 200 else sleep for 5 min
+    if (this->get_http_code() == 200) {
+        this->reset_http_limit_counter();
+        return false;
+    }
+
+    // We have a different 200 code
+    this->increase_http_limit_counter();
+    
+    // Should log only once
+    if (this->get_http_limit_counter() == 3){
+        LOG_MESSAGE(level::Error, "Error counter exceeded, needs manual check");
+    }
+
+    LOG_MESSAGE(level::Info, "Waiting 6 minutes to enable API back");
+    // Sleep for 6 minutes to stop doing request to API
+    std::this_thread::sleep_for(std::chrono::minutes(6));
+
+    return false; 
+}
 
 /**
  * Get request to unique KuCoin endpoint
