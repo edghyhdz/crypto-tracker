@@ -31,9 +31,6 @@ class CheckOrders {
     void get_exchange_crypto_symbols();  // Get all symbol names from exchange
     std::vector<std::string> get_user_cryptos();
 
-
-
-
    private:
     std::shared_ptr<yact::MongoDB> _db_h;
     mongocxx::instance _instance;
