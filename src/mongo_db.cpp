@@ -82,3 +82,71 @@ bool yact::MongoDB::add_record(std::string coll_name, Data data) {
         return false;
     }
 }
+
+/**
+ * Return last added item from collection
+ *
+ * @param[in] coll_name
+ *  collection name
+ * @param[in, out] buffer_data
+ *  queried data from db
+ *
+ */
+bool yact::MongoDB::find_last(std::string coll_name, std::string *buffer_data) {
+    try {
+        mongocxx::collection collection = this->_db[coll_name];
+
+        // Filter collection to get last inserted doc
+        auto order = bsoncxx::builder::stream::document{}
+                     << "$natural" << -1 << bsoncxx::builder::stream::finalize;
+
+        auto opts = mongocxx::options::find{};
+        opts.sort(order.view());
+
+        // We just need the latest crypto currency data
+        auto test = collection.find_one({}, opts);
+
+        // Pass db data to pointer
+        *buffer_data = bsoncxx::to_json(*test);
+
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+/**
+ * Gets record based on given query on `data.document`
+ *
+ * @param[in] coll_name
+ *  collection name
+ * @param[in] data
+ *  data containing query for db
+ * @param[in, out] buffer_data
+ *  queried data from db
+ */
+bool yact::MongoDB::get_record(std::string coll_name, Data data,
+                               std::string *buffer_data) {
+    try {
+        mongocxx::collection collection = this->_db[coll_name];
+        mongocxx::cursor cursor = collection.find(data.document->view());
+
+        for (auto doc : cursor) {
+            std::string temp_doc;
+            if (data.filters != "") {
+                temp_doc = bsoncxx::to_json(doc[data.filters].get_document());
+            } else {
+                temp_doc = bsoncxx::to_json(doc);
+            }
+
+            *buffer_data += "[" + temp_doc + "],";
+        }
+        // Get rid of comma from last item
+        buffer_data->pop_back();
+        std::cout << "ALL DATA\n" << *buffer_data << std::endl;
+
+        return true;
+    } catch (...) {
+        return false;
+    }
+}

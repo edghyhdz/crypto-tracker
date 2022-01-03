@@ -24,6 +24,8 @@ constexpr char kUsersPortfolio[] = "userPortfolio";
 struct Data {
     std::map<std::string, double> dictionary;
     long time_stamp;
+    bsoncxx::v_noabi::document::value *document;
+    std::string filters{};
 };
 
 namespace yact {
@@ -35,7 +37,9 @@ class MongoDB : public BaseDB {
     bool add_record(std::string collection, Data data) override;
     bool update_record() override;
     bool delete_record(std::string collection, Data data) override;
-    bool get_record(std::string collection, Data data) override;
+    bool get_record(std::string collection, Data data, std::string *buffer_data) override;
+
+    bool find_last(std::string collection, std::string *buffer_data);
 
    private:
     mongocxx::uri _uri;
