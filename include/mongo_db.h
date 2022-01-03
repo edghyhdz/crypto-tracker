@@ -35,6 +35,7 @@ class MongoDB : public BaseDB {
     bool add_record(std::string collection, Data data) override;
     bool update_record() override;
     bool delete_record(std::string collection, Data data) override;
+    bool get_record(std::string collection, Data data) override;
 
    private:
     mongocxx::uri _uri;
