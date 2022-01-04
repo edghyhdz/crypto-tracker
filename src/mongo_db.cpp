@@ -129,7 +129,9 @@ bool yact::MongoDB::get_record(std::string coll_name, Data data,
                                std::string *buffer_data) {
     try {
         mongocxx::collection collection = this->_db[coll_name];
-        mongocxx::cursor cursor = collection.find(data.document->view());
+        mongocxx::cursor cursor = collection.find(data.document_view);
+        
+        *buffer_data += "{\"results\": ["; 
 
         for (auto doc : cursor) {
             std::string temp_doc;
@@ -139,11 +141,12 @@ bool yact::MongoDB::get_record(std::string coll_name, Data data,
                 temp_doc = bsoncxx::to_json(doc);
             }
 
-            *buffer_data += "[" + temp_doc + "],";
+            *buffer_data += temp_doc + ",";
         }
+
         // Get rid of comma from last item
         buffer_data->pop_back();
-        std::cout << "ALL DATA\n" << *buffer_data << std::endl;
+        *buffer_data += "]}";
 
         return true;
     } catch (...) {

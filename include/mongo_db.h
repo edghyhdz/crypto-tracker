@@ -24,8 +24,9 @@ constexpr char kUsersPortfolio[] = "userPortfolio";
 struct Data {
     std::map<std::string, double> dictionary;
     long time_stamp;
-    bsoncxx::v_noabi::document::value *document;
+    bsoncxx::v_noabi::document::view document_view;
     std::string filters{};
+
 };
 
 namespace yact {
