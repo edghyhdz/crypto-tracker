@@ -1,0 +1,26 @@
+name: Linux (build cmake)
+
+on:
+  push:
+      branches: [ main ]
+  pull_request:
+      branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install mongocxx
+      run: |
+        wget https://raw.githubusercontent.com/evanugarte/mongocxx-tutorial/09dc4bf76d57fe40cf7154a8eb9e7530d49ab536/setup-mongocxx
+        ls -F
+        sudo chmod +x setup-mongocxx
+        ./setup-mongocxx
+    - name: install boost
+      run: sudo apt-get install libboost-all-dev
+    - name: install curl libraries
+      run: sudo apt-get install libcurl4-gnutls-dev
+
