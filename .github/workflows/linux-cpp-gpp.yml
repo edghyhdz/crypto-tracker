@@ -13,18 +13,31 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: install mongocxx
+    - name: Check files
+      run: ls -F
+    - name: Checkout submodules
       run: |
-        wget https://raw.githubusercontent.com/evanugarte/mongocxx-tutorial/09dc4bf76d57fe40cf7154a8eb9e7530d49ab536/setup-mongocxx
-        ls -F
-        sudo chmod +x setup-mongocxx
-        sudo ./setup-mongocxx
-    - name: install boost
-      run: sudo apt-get install libboost-all-dev
-    - name: install curl libraries
-      run: sudo apt-get install libcurl4-gnutls-dev
-    - name: build cmake
-      run: |
-        mkdir build && cd build
-        cmake .. && make
+        # If your submodules are configured to use SSH instead of HTTPS please uncomment the following line
+        # git config --global url."https://github.com/".insteadOf "git@github.com:"
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+    - name: Check files - vendor
+      run: ls ./vendor/spotify-json/ -F
+
+
+    # - name: install mongocxx
+    #   run: |
+    #     wget https://raw.githubusercontent.com/evanugarte/mongocxx-tutorial/09dc4bf76d57fe40cf7154a8eb9e7530d49ab536/setup-mongocxx
+    #     ls -F
+    #     sudo chmod +x setup-mongocxx
+    #     sudo ./setup-mongocxx
+    # - name: install boost
+    #   run: sudo apt-get install libboost-all-dev
+    # - name: install curl libraries
+    #   run: sudo apt-get install libcurl4-gnutls-dev
+    # - name: build cmake
+    #   run: |
+    #     mkdir build && cd build
+        # cmake .. && make
 
