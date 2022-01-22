@@ -36,7 +36,7 @@ struct UserOrders {
    std::map<std::string, std::vector<OrderData>> buy_orders;
 };
 
- struct AllUsers {
+ struct Users {
     std::vector<UserOrders> all_orders;
  };
 
@@ -65,10 +65,10 @@ namespace json {
 
 // Specialize spotify::json::default_codec_t to specify default behavior when
 // encoding and decoding objects of certain types.
-template <> struct default_codec_t<yact::AllUsers> {
-  static codec::object_t<yact::AllUsers> codec() {
-    auto codec = codec::object<yact::AllUsers>();
-    codec.required("results", &yact::AllUsers::all_orders);
+template <> struct default_codec_t<yact::Users> {
+  static codec::object_t<yact::Users> codec() {
+    auto codec = codec::object<yact::Users>();
+    codec.required("results", &yact::Users::all_orders);
     return codec;
   }
 };
