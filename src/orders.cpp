@@ -26,7 +26,7 @@ void yact::CheckOrders::open_orders(OrderType o_type,
     std::string buffer;
     bsoncxx::builder::stream::document doc{};
 
-    auto doc_view = doc << "exchange" << this->_exchange_name 
+    auto doc_view = doc << "exchange" << this->_exchange_name
                         << bsoncxx::builder::stream::finalize;
 
     // Pass it as a document view otherwise object will get destroyed after
@@ -34,11 +34,27 @@ void yact::CheckOrders::open_orders(OrderType o_type,
     data.document_view = doc_view.view();
     this->_db_h->get_record("userOrders", data, buffer_data);
 
-    yact::AllUsers all = spotify::json::decode<yact::AllUsers>(*buffer_data);
+    yact::Users users = spotify::json::decode<yact::Users>(*buffer_data);
 
-    for (yact::UserOrders item : all.all_orders) {
-        std::cout << "Size buy orders: " << item.buy_orders.size() << std::endl;
-        std::cout << "Size sell orders: " << item.sell_orders.size() << std::endl;
+    // for (yact::UserOrderrs item
+
+    for (yact::UserOrders item : users.all_orders) {
+        std::cout << "\nUser: " << item._uid << " -------------------- \n\n";
+
+        for (auto b_order : item.buy_orders) {
+            std::cout << "Crypto on " << item.exchange << ": " << b_order.first
+                      << ". Buy order: " << b_order.second[0].price
+                      << std::endl;
+        }
+        for (auto s_order : item.sell_orders) {
+            std::cout << "Crypto: " << s_order.first
+                      << ". Sell order: " << s_order.second[0].price
+                      << std::endl;
+        }
+
+        // std::cout << "Size buy orders: " << item.buy_orders.size() << std::endl;
+        // std::cout << "Size sell orders: " << item.sell_orders.size()
+        //          << std::endl;
     }
 }
 
